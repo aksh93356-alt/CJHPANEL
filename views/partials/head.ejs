@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title><%= typeof title !== 'undefined' ? title + ' - ' : '' %><%= S.name %></title>
+<link rel="stylesheet" href="/css/style.css">
+<style>:root{--accent:<%- S.accent %>;--bg:<%- S.bg %>;--panel:<%- S.panel %>;--blur:<%- S.blur %>px;--bgimg:<%- S.bgimage ? 'url("' + S.bgimage + '")' : 'none' %>}</style>
+</head><body>
+<%
+const isImg = /^(https?:)?\/\//.test(S.icon) || S.icon.startsWith('/');
+%>
+<% if (user) { %>
+<nav>
+  <a class="brand" href="/"><% if (isImg) { %><img src="<%= S.icon %>" alt=""><% } else { %><span><%= S.icon %></span><% } %><%= S.name %></a>
+  <a href="/">Servers</a>
+  <% if (user.is_admin) { %><a href="/admin">Admin</a><% } %>
+  <span class="sp"></span><span class="muted"><%= user.username %></span>
+  <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn g s">Log out</button></form>
+</nav>
+<% } %>
+<main>
