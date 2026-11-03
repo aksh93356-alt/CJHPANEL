@@ -1,0 +1,15 @@
+<%- include('partials/head', { title: 'Servers' }) %>
+<div class="card"><h2>Create a server</h2>
+  <form method="post" action="/servers" class="grid"><input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div><label>Name</label><input name="name" required maxlength="40"></div>
+    <div><label>Minecraft version (Paper)</label><input name="version" value="1.21.4" pattern="[0-9.]+" required></div>
+    <div><label>Memory (MB)</label><input name="memory" type="number" value="1024" min="512" max="32768" required></div>
+    <div><label>Node</label><select name="node_id"><% nodes.forEach(n => { %><option value="<%= n.id %>"><%= n.name %></option><% }) %></select></div>
+    <button class="btn">Create server</button>
+  </form></div>
+<div class="card"><h2>Your servers</h2>
+<% if (!list.length) { %><p class="muted">You have no servers yet. Create one above.</p><% } else { %>
+<table><tr><th>Name</th><th>Version</th><th>Memory</th><th>Node</th><th>Port</th><th>Status</th><th></th></tr>
+<% list.forEach(s => { %><tr><td><a href="/servers/<%= s.id %>"><%= s.name %></a></td><td><%= s.version %></td><td><%= s.memory %> MB</td><td><%= s.node %></td><td><%= s.port %></td>
+<td><span class="badge <%= s.status %>"><%= s.status %></span></td><td><a class="btn g s" href="/servers/<%= s.id %>">Console</a></td></tr><% }) %></table><% } %></div>
+<%- include('partials/foot') %>
