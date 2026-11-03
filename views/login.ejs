@@ -1,0 +1,14 @@
+<%- include('partials/head', { title: mode === 'login' ? 'Log in' : 'Register' }) %>
+<div class="card auth">
+  <h1><%= S.name %></h1>
+  <p class="muted"><%= mode === 'login' ? 'Log in to manage your Minecraft servers.' : 'Create an account to host your own servers.' %></p>
+  <% if (error) { %><p class="err"><%= error %></p><% } %>
+  <form method="post" action="/<%= mode %>">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div><label>Username</label><input name="username" autocomplete="username" required autofocus></div>
+    <div><label>Password</label><input name="password" type="password" autocomplete="<%= mode === 'login' ? 'current-password' : 'new-password' %>" required></div>
+    <button class="btn" style="width:100%"><%= mode === 'login' ? 'Log in' : 'Create account' %></button>
+  </form>
+  <p class="muted"><% if (mode === 'login') { %>No account? <a href="/register">Register</a><% } else { %>Have an account? <a href="/login">Log in</a><% } %></p>
+</div>
+<%- include('partials/foot') %>
