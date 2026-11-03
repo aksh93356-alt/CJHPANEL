@@ -1,0 +1,55 @@
+<%- include('partials/head', { title: server.name }) %>
+<div class="card">
+  <div class="row"><h1 style="margin:0"><%= server.name %></h1><span id="st" class="badge">...</span><span class="sp"></span>
+    <button class="btn s" onclick="power('start')">Start</button>
+    <button class="btn g s" onclick="power('stop')">Stop</button>
+    <button class="btn r s" onclick="power('kill')">Kill</button>
+    <button class="btn r s" onclick="del()">Delete</button></div>
+  <p class="muted">Paper <%= server.version %> · <%= server.memory %> MB · Node: <%= node.name %> · Direct address: <code><%= address %></code></p>
+  <pre class="term" id="con"></pre>
+  <form id="cf" class="row"><input id="ci" placeholder="Type a command (e.g. say hello) and press Enter" autocomplete="off" style="flex:1"><button class="btn">Send</button></form>
+</div>
+<div class="card"><h2>Playit.gg tunnel (no public IP needed)</h2>
+  <ol>
+    <li>Press <b>Start Playit agent</b>. The agent runs on this server's node (<%= node.name %>).</li>
+    <li>Open the <code>playit.gg/claim</code> link that appears in the agent log, sign in, and approve the agent.</li>
+    <li>On playit.gg create a <b>Minecraft Java</b> tunnel to local address <code>127.0.0.1</code> port <code><%= server.port %></code>.</li>
+    <li>Share the address playit.gg gives you. Players join with that address, with no port forwarding.</li>
+  </ol>
+  <div class="row" style="margin-bottom:10px"><button class="btn s" onclick="playit('start')">Start Playit agent</button>
+    <button class="btn g s" onclick="playit('stop')">Stop agent</button><span id="pst" class="badge">...</span>
+    <input id="sec" placeholder="Optional: existing Playit secret key" style="max-width:320px"></div>
+  <pre class="term sm" id="pcon"></pre>
+</div>
+<script>
+const CSRF = "<%= csrf %>", ID = <%= server.id %>;
+const post = (u, d) => fetch(u, { method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf': CSRF }, body: JSON.stringify(d || {}) }).then(r => r.json());
+const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const fmt = s => esc(s.replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '')).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+const st = (el, s) => { el.textContent = s; el.className = 'badge ' + s; };
+function poll(src, el, onStatus) {
+  let since = 0;
+  (async function tick() {
+    try {
+      const d = await (await fetch(`/servers/${ID}/logs?src=${src}&since=${since}`)).json();
+      if (d.error) throw new Error(d.error);
+      if (d.last < since) { since = 0; el.innerHTML = ''; }
+      else if (d.lines.length) {
+        const bottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
+        el.insertAdjacentHTML('beforeend', d.lines.map(l => fmt(l.t)).join('\n') + '\n'); since = d.last;
+        if (bottom) el.scrollTop = el.scrollHeight;
+      }
+      onStatus(d);
+    } catch (e) { onStatus({ status: 'unreachable', playit: 'unreachable' }); }
+    setTimeout(tick, 1500);
+  })();
+}
+poll('server', con, d => { st(document.getElementById('st'), d.status); st(document.getElementById('pst'), d.playit); });
+poll('playit', pcon, () => {});
+const toast = r => { if (r.error) alert(r.error); };
+const power = a => post(`/servers/${ID}/power`, { action: a }).then(toast);
+const playit = a => post(`/servers/${ID}/playit`, { action: a, secret: sec.value.trim() }).then(toast);
+cf.onsubmit = e => { e.preventDefault(); const v = ci.value.trim(); if (!v) return; ci.value = ''; post(`/servers/${ID}/command`, { cmd: v }).then(toast); };
+const del = () => confirm('Delete this server and all its files?') && post(`/servers/${ID}/delete`).then(r => r.error ? alert(r.error) : location.href = '/');
+</script>
+<%- include('partials/foot') %>
