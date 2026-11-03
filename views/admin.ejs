@@ -1,0 +1,51 @@
+<%- include('partials/head', { title: 'Admin' }) %>
+<div class="card"><h2>Nodes</h2>
+<table><tr><th>Name</th><th>Address</th><th>Status</th><th></th></tr>
+<% nodes.forEach(n => { %><tr><td><%= n.name %><%= n.is_local ? ' (built-in)' : '' %></td>
+<td><%= n.is_local ? 'this machine' : n.address + ':' + n.port %></td>
+<td><span class="badge <%= n.online ? 'online' : 'unreachable' %>"><%= n.online ? 'online' : 'unreachable' %></span></td>
+<td><% if (!n.is_local) { %><form method="post" action="/admin/nodes/<%= n.id %>/delete" onsubmit="return confirm('Remove this node?')"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn r s">Remove</button></form><% } %></td></tr><% }) %></table>
+<h2 style="margin-top:22px">Add a remote node</h2>
+<p class="muted">On the other VPS run: <code>curl -fsSL &lt;raw-install.sh-url&gt; | sudo CJH_REPO=&lt;repo-url&gt; CJH_MODE=node CJH_TOKEN=<%= token %> bash</code>, open TCP 6768 to this panel only, then add it here with the same token.</p>
+<form method="post" action="/admin/nodes" class="grid"><input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div><label>Name</label><input name="name" required></div>
+  <div><label>IP or hostname</label><input name="address" required></div>
+  <div><label>Agent port</label><input name="port" type="number" value="6768"></div>
+  <div><label>Token</label><input name="token" value="<%= token %>" required minlength="16"></div>
+  <div><label>Public host for players (optional)</label><input name="public_host"></div>
+  <button class="btn">Add node</button></form></div>
+
+<div class="card"><h2>Appearance</h2>
+<form method="post" action="/admin/settings" class="grid"><input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div><label>Preset theme</label><select id="preset"><option value="">Choose...</option><option value="dark">Violet dark</option><option value="midnight">Midnight blue</option><option value="emerald">Emerald</option><option value="crimson">Crimson</option><option value="amber">Amber</option></select></div>
+  <div><label>Panel name</label><input name="name" value="<%= S.name %>" maxlength="30"></div>
+  <div><label>Icon (emoji or image URL)</label><input name="icon" value="<%= S.icon %>"></div>
+  <div><label>Accent color</label><input type="color" name="accent" id="accent" value="<%= S.accent %>"></div>
+  <div><label>Background color</label><input type="color" name="bg" id="bg" value="<%= S.bg %>"></div>
+  <div><label>Card color</label><input type="color" name="panel" id="panel" value="<%= S.panel %>"></div>
+  <div><label>Background image URL (optional)</label><input name="bgimage" id="bgimage" value="<%= S.bgimage %>" placeholder="https://..."></div>
+  <div><label>Background blur: <span id="bv"><%= S.blur %></span>px</label><input type="range" name="blur" id="blur" min="0" max="20" value="<%= S.blur %>"></div>
+  <button class="btn">Save appearance</button></form></div>
+
+<div class="card"><h2>Users</h2>
+<table><tr><th>Username</th><th>Role</th><th></th></tr>
+<% users.forEach(u => { %><tr><td><%= u.username %></td><td><%= u.is_admin ? 'Admin' : 'User' %></td>
+<td><% if (u.id !== user.id) { %><form method="post" action="/admin/users/<%= u.id %>/delete" onsubmit="return confirm('Delete this user and their servers?')"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn r s">Delete</button></form><% } %></td></tr><% }) %></table></div>
+
+<div class="card"><h2>Change your password</h2>
+<form method="post" action="/account/password" class="grid"><input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div><label>Current password</label><input type="password" name="old" required></div>
+  <div><label>New password (6+ characters)</label><input type="password" name="new" minlength="6" required></div>
+  <button class="btn">Update password</button></form></div>
+<script>
+const P = { dark: ['#7c5cff', '#0b0d12', '#141821'], midnight: ['#3b82f6', '#05070f', '#0d1220'], emerald: ['#10b981', '#06100d', '#0e1a16'], crimson: ['#ef4444', '#0f0707', '#1a0e0e'], amber: ['#f59e0b', '#0f0c06', '#1b150c'] };
+const root = document.documentElement.style, $ = id => document.getElementById(id);
+const live = () => {
+  root.setProperty('--accent', $('accent').value); root.setProperty('--bg', $('bg').value); root.setProperty('--panel', $('panel').value);
+  root.setProperty('--blur', $('blur').value + 'px'); $('bv').textContent = $('blur').value;
+  const u = $('bgimage').value.trim(); root.setProperty('--bgimg', /^(https?:\/\/|\/)[^\s"'()<>\\]+$/.test(u) ? `url("${u}")` : 'none');
+};
+['accent', 'bg', 'panel', 'blur', 'bgimage'].forEach(i => $(i).addEventListener('input', live));
+$('preset').onchange = e => { const p = P[e.target.value]; if (!p) return; [$('accent').value, $('bg').value, $('panel').value] = p; live(); };
+</script>
+<%- include('partials/foot') %>
